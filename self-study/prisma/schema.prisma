@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  passwordHash  String
+  name          String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  sessions      Session[]
+  documents     StudyDocument[]
+  studyPlans    StudyPlan[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model StudyDocument {
+  id            String        @id @default(cuid())
+  title         String
+  originalName  String
+  pages         Int
+  textContent   String
+  highlights    Json
+  summary       String
+  userId        String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  studyPlans    StudyPlan[]
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model StudyPlan {
+  id              String        @id @default(cuid())
+  name            String
+  documentId      String
+  userId          String
+  totalDays       Int
+  startDate       DateTime
+  deadline        DateTime
+  dailyWordCount  Int
+  summary         String
+  keyConcepts     Json
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  progressEntries ProgressEntry[]
+  dailyGoals      DailyGoal[]
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document        StudyDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model DailyGoal {
+  id          String        @id @default(cuid())
+  studyPlanId String
+  dayNumber   Int
+  date        DateTime
+  startIndex  Int
+  endIndex    Int
+  contentPreview String
+  wordCount   Int
+  completed   Boolean       @default(false)
+  reflections Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  studyPlan   StudyPlan     @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+  checkpoints ProgressEntry[]
+}
+
+model ProgressEntry {
+  id          String    @id @default(cuid())
+  studyPlanId String
+  goalId      String?
+  notes       String?
+  mood        String?
+  mastery     Int?
+  createdAt   DateTime  @default(now())
+  studyPlan   StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+  dailyGoal   DailyGoal? @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
